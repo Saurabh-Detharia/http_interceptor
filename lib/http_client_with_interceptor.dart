@@ -88,7 +88,7 @@ class HttpClientWithInterceptor extends BaseClient {
       );
 
   Future<Response> get(Uri url,
-          {Map<String, String>? headers, Map<String, String>? params}) =>
+      {Map<String, String>? headers, Map<String, String>? params}) =>
       _sendUnstreamed(
         method: Method.GET,
         url: url,
@@ -97,7 +97,7 @@ class HttpClientWithInterceptor extends BaseClient {
       );
 
   Future<Response> post(Uri url,
-          {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
+      {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
       _sendUnstreamed(
         method: Method.POST,
         url: url,
@@ -107,7 +107,7 @@ class HttpClientWithInterceptor extends BaseClient {
       );
 
   Future<Response> put(Uri url,
-          {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
+      {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
       _sendUnstreamed(
         method: Method.PUT,
         url: url,
@@ -117,7 +117,7 @@ class HttpClientWithInterceptor extends BaseClient {
       );
 
   Future<Response> patch(Uri url,
-          {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
+      {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
       _sendUnstreamed(
         method: Method.PATCH,
         url: url,
@@ -127,7 +127,7 @@ class HttpClientWithInterceptor extends BaseClient {
       );
 
   Future<Response> delete(Uri url,
-          {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
+      {Map<String, String>? headers, Object? body, Encoding? encoding}) =>
       _sendUnstreamed(
         method: Method.DELETE,
         url: url,
@@ -218,9 +218,28 @@ class HttpClientWithInterceptor extends BaseClient {
     } on Exception catch (error) {
       if (retryPolicy != null &&
           retryPolicy!.maxRetryAttempts > _retryCount &&
-          retryPolicy!.shouldAttemptRetryOnException(error)) {
+          await retryPolicy!.shouldAttemptRetryOnException(error)) {
         _retryCount += 1;
         return _attemptRequest(request);
+      } else if (error.runtimeType == ClientException) {
+
+        Response response = new Response(
+          "{\"message\":\"Unauthorized\"}",
+          401,
+          headers: request.headers,
+          persistentConnection: true,
+          reasonPhrase: "Unauthorized",
+          request: request,
+          isRedirect: false,
+        );
+        if(retryPolicy!.maxRetryAttempts > _retryCount &&  await retryPolicy!.shouldAttemptRetryOnResponse(
+            ResponseData.fromHttpResponse(response))){
+          _retryCount += 1;
+          return _attemptRequest(request);
+        }else{
+          return response;
+        }
+        // return response;
       } else {
         rethrow;
       }
