@@ -4,5 +4,5 @@ abstract class RetryPolicy {
   bool shouldAttemptRetryOnException(Exception reason) => false;
   Future<bool> shouldAttemptRetryOnResponse(ResponseData response) async =>
       false;
-  final int maxRetryAttempts = 1;
+  final int maxRetryAttempts = 4;
 }
